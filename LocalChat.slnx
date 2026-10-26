@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/LocalChat/LocalChat.csproj" />
+  <Project Path="tests/LocalChat.Tests/LocalChat.Tests.csproj" />
+</Solution>
