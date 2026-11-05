@@ -1,6 +1,12 @@
 using System.IO;
 using LocalChat;
 
+if (args.Contains("--screenshot-ui"))
+{
+    ScreenshotUiPreview.Run();
+    return;
+}
+
 var root = Path.Combine(Path.GetTempPath(), "LocalChatTests-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 var assertions = 0;
@@ -12,12 +18,29 @@ void Check(bool condition, string description)
 }
 try
 {
+    ScreenshotAnnotationTests.Run(Check);
+    var bounds = new System.Windows.Size(1920, 1080);
+    var chosen = CaptureGeometry.FromPoints(new System.Windows.Point(500, 400), new System.Windows.Point(100, 80), bounds);
+    Check(chosen == new System.Windows.Rect(100, 80, 400, 320), "screenshot selection supports reverse dragging");
+    Check(CaptureGeometry.FromPoints(new(-100, -50), new(3000, 2000), bounds) == new System.Windows.Rect(0, 0, 1920, 1080), "screenshot selection clamps to desktop");
+    Check(CaptureGeometry.Move(chosen, new System.Windows.Vector(3000, -500), bounds) == new System.Windows.Rect(1520, 0, 400, 320), "moving selection preserves size and stays on screen");
+    var resized = CaptureGeometry.Resize(chosen, new System.Windows.Vector(500, 500), CaptureEdge.Left | CaptureEdge.Top, bounds);
+    Check(resized.Width == 1 && resized.Height == 1 && resized.Right == chosen.Right, "resize cannot invert a selection");
+    Check(CaptureGeometry.Resize(chosen, new System.Windows.Vector(3000, 3000), CaptureEdge.Right | CaptureEdge.Bottom, bounds).BottomRight == new System.Windows.Point(1920, 1080), "resize clamps bottom and right edges");
+    Check(CaptureGeometry.Resize(new System.Windows.Rect(1919.5, 1079.5, 0.5, 0.5), new System.Windows.Vector(10, 10), CaptureEdge.Right | CaptureEdge.Bottom, bounds).BottomRight == new System.Windows.Point(1920, 1080), "sub-DIP pixel selections at the screen edge resize without exceptions");
+    Check(CaptureGeometry.ToPixels(new System.Windows.Rect(100, 80, 400, 320), new System.Windows.Size(1280, 720), 1920, 1080) == new System.Windows.Int32Rect(150, 120, 600, 480), "selection scales to actual pixels at 150 percent DPI");
+    Check(CaptureGeometry.ToPixels(new System.Windows.Rect(0, 0, 1920, 1080), bounds, 1920, 1080) == new System.Windows.Int32Rect(0, 0, 1920, 1080), "full desktop crop has exact pixel dimensions");
+    var fractional = new System.Windows.Rect(101 * 1280d / 1920, 37 * 720d / 1080, 333 * 1280d / 1920, 111 * 720d / 1080);
+    Check(CaptureGeometry.ToPixels(fractional, new System.Windows.Size(1280, 720), 1920, 1080) == new System.Windows.Int32Rect(101, 37, 333, 111), "numeric pixel dimensions avoid floating-point off-by-one errors");
+    Check(!new Settings().HideWindowForScreenshot, "hide-window screenshot option defaults to off");
     var legacySettings = System.Text.Json.JsonSerializer.Deserialize<Settings>("{\"EnterToSend\":false}")!;
     Check(legacySettings.DefaultWindowWidth == 1080 && legacySettings.DefaultWindowHeight == 800, "legacy configuration gets default startup dimensions");
     legacySettings.DefaultWindowWidth = 640;
     legacySettings.DefaultWindowHeight = 720;
+    legacySettings.HideWindowForScreenshot = true;
     var roundtripSettings = System.Text.Json.JsonSerializer.Deserialize<Settings>(System.Text.Json.JsonSerializer.Serialize(legacySettings))!;
     Check(roundtripSettings.DefaultWindowWidth == 640 && roundtripSettings.DefaultWindowHeight == 720 && !roundtripSettings.EnterToSend, "startup dimensions serialize alongside input preferences");
+    Check(roundtripSettings.HideWindowForScreenshot, "hide-window screenshot preference survives settings serialization");
     var store = new ChatStore(Path.Combine(root, "data"));
     var source = Path.Combine(root, "原始资料.txt");
     await File.WriteAllTextAsync(source, "附件内容 unchanged");

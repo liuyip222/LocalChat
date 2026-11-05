@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -37,8 +38,10 @@ public partial class MainWindow : Window
         MessagesList.ItemsSource = messages;
         PendingList.ItemsSource = pending;
         SearchResults.ItemsSource = results;
-        DataObject.AddPastingHandler(Composer, OnPaste);
+        Composer.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, OnPaste,
+            (_, e) => { e.CanExecute = !busy && !Composer.IsReadOnly; e.Handled = true; }));
         UpdateHint();
+        HideWindowForScreenshotMenu.IsChecked = settings.HideWindowForScreenshot;
         Loaded += async (_, _) => await RunAsync(async () => { await LoadLatestAsync(); Composer.Focus(); });
     }
     private void ApplyStartupSize()
@@ -58,10 +61,12 @@ public partial class MainWindow : Window
         busy = true;
         UpdateSendState();
         AddFileButton.IsEnabled = false;
+        ScreenshotButton.IsEnabled = false;
+        ScreenshotOptionsButton.IsEnabled = false;
         Composer.IsReadOnly = true;
         try { await operation(); }
         catch (Exception ex) { Status.Text = "操作失败：" + ex.Message; MessageBox.Show(this, ex.Message, "操作未完成", MessageBoxButton.OK, MessageBoxImage.Error); }
-        finally { busy = false; Composer.IsReadOnly = false; AddFileButton.IsEnabled = true; UpdateSendState(); gate.Release(); }
+        finally { busy = false; Composer.IsReadOnly = false; AddFileButton.IsEnabled = true; ScreenshotButton.IsEnabled = true; ScreenshotOptionsButton.IsEnabled = true; UpdateSendState(); gate.Release(); }
     }
     private async Task<List<Message>> LoadAsync(SearchFilter filter, long? before = null)
     {
@@ -159,33 +164,98 @@ public partial class MainWindow : Window
     }
     private void OnDragOver(object sender, DragEventArgs e) { e.Effects = !busy && e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; }
     private void OnDrop(object sender, DragEventArgs e) { if (e.Data.GetData(DataFormats.FileDrop) is string[] paths) AddPending(paths); e.Handled = true; }
-    private void OnPaste(object sender, DataObjectPastingEventArgs e)
+    private async void OnPaste(object sender, ExecutedRoutedEventArgs e)
     {
-        if (busy) { e.CancelCommand(); return; }
+        e.Handled = true;
+        if (busy) return;
         try
         {
-            if (e.SourceDataObject.GetDataPresent(DataFormats.FileDrop))
+            // Retry brief clipboard contention without changing its contents.
+            for (var attempt = 0; ; attempt++)
             {
-                if (e.SourceDataObject.GetData(DataFormats.FileDrop) is string[] files) AddPending(files);
-                e.CancelCommand();
-            }
-            else if (Clipboard.ContainsImage())
-            {
-                var image = Clipboard.GetImage();
-                if (image == null) return;
-                var dir = Path.Combine(Path.GetTempPath(), "LocalChat", "clipboard");
-                Directory.CreateDirectory(dir);
-                var path = Path.Combine(dir, Guid.NewGuid().ToString("N") + ".png");
-                var encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(image));
-                using (var file = File.Create(path)) encoder.Save(file);
-                pending.Add(new(path, $"截图_{DateTime.Now:yyyyMMdd_HHmmss}.png", true));
-                UpdatePending();
-                e.CancelCommand();
+                try
+                {
+                    if (busy) return;
+                    var data = Clipboard.GetDataObject();
+                    if (data == null) return;
+                    if (data.GetDataPresent(DataFormats.FileDrop) && data.GetData(DataFormats.FileDrop) is string[] files)
+                        AddPending(files);
+                    else if ((ClipboardImages.Read(data) ?? Clipboard.GetImage()) is { } image)
+                        AddPendingImage(image);
+                    else if (data.GetData(DataFormats.UnicodeText, true) is string text)
+                    {
+                        Composer.SelectedText = text;
+                        Composer.CaretIndex = Composer.SelectionStart + Composer.SelectionLength;
+                        Composer.SelectionLength = 0;
+                    }
+                    return;
+                }
+                catch (ExternalException) when (attempt < 4) { await Task.Delay(80); }
             }
         }
-        catch (Exception ex) { e.CancelCommand(); Status.Text = "粘贴失败：" + ex.Message; }
+        catch (Exception ex) { Status.Text = "粘贴失败：" + ex.Message; }
     }
+    private void AddPendingImage(BitmapSource image)
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "LocalChat", "clipboard");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, Guid.NewGuid().ToString("N") + ".png");
+        try
+        {
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(image));
+            using (var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write)) encoder.Save(file);
+            pending.Add(new(path, $"截图_{DateTime.Now:yyyyMMdd_HHmmss}.png", true));
+            UpdatePending();
+        }
+        catch { if (File.Exists(path)) File.Delete(path); throw; }
+    }
+    private void OnScreenshotOptions(object sender, RoutedEventArgs e)
+    {
+        if (busy || ScreenshotOptionsButton.ContextMenu is not { } menu) return;
+        HideWindowForScreenshotMenu.IsChecked = settings.HideWindowForScreenshot;
+        menu.PlacementTarget = ScreenshotOptionsButton;
+        menu.IsOpen = true;
+    }
+    private async void OnHideWindowForScreenshot(object sender, RoutedEventArgs e) => await RunAsync(() =>
+    {
+        var old = settings.HideWindowForScreenshot;
+        try { settings.HideWindowForScreenshot = HideWindowForScreenshotMenu.IsChecked; settings.Save(); }
+        catch { settings.HideWindowForScreenshot = old; HideWindowForScreenshotMenu.IsChecked = old; throw; }
+        return Task.CompletedTask;
+    });
+    private async void OnScreenshot(object sender, RoutedEventArgs e) => await RunAsync(async () =>
+    {
+        BitmapSource? image = null;
+        var hidden = new List<Window>();
+        try
+        {
+            if (settings.HideWindowForScreenshot)
+            {
+                hidden.AddRange(Application.Current.Windows.Cast<Window>().Where(window => window.IsVisible));
+                foreach (var window in hidden) window.Hide();
+            }
+            // Allow the menu to close and compositor to repaint before capturing the frozen desktop.
+            await Task.Delay(220);
+            var captured = ScreenCapture.CaptureDesktop();
+            var dialog = new ScreenshotWindow(captured);
+            if (dialog.ShowDialog() == true) image = dialog.Result;
+        }
+        finally
+        {
+            foreach (var window in hidden) window.Show();
+            Activate();
+        }
+        if (image == null) { Composer.Focus(); return; }
+        for (var attempt = 0; ; attempt++)
+        {
+            try { Clipboard.SetImage(image); Clipboard.Flush(); break; }
+            catch (ExternalException) when (attempt < 4) { await Task.Delay(100); }
+        }
+        AddPendingImage(image);
+        Status.Text = "截图已复制到剪贴板并加入输入框，点击发送保存。";
+        Composer.Focus();
+    });
     private void OnComposerChanged(object sender, TextChangedEventArgs e) => UpdateSendState();
     private void UpdateSendState() { if (SendButton != null) SendButton.IsEnabled = !busy && (!string.IsNullOrWhiteSpace(Composer.Text) || pending.Count > 0); }
     private void UpdateHint(bool? previewEnterToSend = null)
@@ -264,7 +334,16 @@ public partial class MainWindow : Window
         if (GetAttachment(sender) is { } a) Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{a.FullPath}\"") { UseShellExecute = true });
         return Task.CompletedTask;
     });
-    private async void OnCopyMessage(object sender, RoutedEventArgs e) => await RunAsync(() => { if (((FrameworkElement)sender).DataContext is Message m && m.Text.Length > 0) { Clipboard.SetText(m.Text); Status.Text = "文字已复制"; } return Task.CompletedTask; });
+    private async void OnCopyMessage(object sender, RoutedEventArgs e) => await RunAsync(() =>
+    {
+        if (((FrameworkElement)sender).DataContext is Message m && m.Text.Length > 0)
+        {
+            var target = ((MenuItem)sender).Parent is ContextMenu menu ? menu.PlacementTarget as TextBox : null;
+            Clipboard.SetText(target is { SelectionLength: > 0 } ? target.SelectedText : m.Text);
+            Status.Text = "文字已复制";
+        }
+        return Task.CompletedTask;
+    });
     private async void OnDeleteMessage(object sender, RoutedEventArgs e)
     {
         if (((FrameworkElement)sender).DataContext is not Message m || busy) return;
@@ -365,6 +444,7 @@ public partial class MainWindow : Window
                     DataDirectory = nextStore.Root,
                     ExportDirectory = dialog.ExportDirectory,
                     EnterToSend = dialog.EnterToSend,
+                    HideWindowForScreenshot = settings.HideWindowForScreenshot,
                     DefaultWindowWidth = dialog.DefaultWindowWidth,
                     DefaultWindowHeight = dialog.DefaultWindowHeight,
                     PreviousDataDirectories = (settings.PreviousDataDirectories ?? []).Concat(

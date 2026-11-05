@@ -11,6 +11,7 @@ public sealed class Settings
     public string DataDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LocalChat", "Data");
     public string ExportDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "LocalChat");
     public bool EnterToSend { get; set; } = true;
+    public bool HideWindowForScreenshot { get; set; }
     public int DefaultWindowWidth { get; set; } = 1080;
     public int DefaultWindowHeight { get; set; } = 800;
     public List<string> PreviousDataDirectories { get; set; } = [];

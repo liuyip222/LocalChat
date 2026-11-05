@@ -8,6 +8,7 @@
     <AssemblyName>LocalChat</AssemblyName>
     <Version>0.1.0</Version>
     <ApplicationIcon>Assets\localchat.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <Resource Include="Assets\localchat.ico" />
