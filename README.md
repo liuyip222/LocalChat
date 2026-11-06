@@ -6,6 +6,10 @@
 
 **无需账号，不上传聊天数据。** 使用 C#、WPF 和 SQLite 构建，采用 [MIT 许可证](LICENSE)。
 
+[工具展示页](https://liuyip222.github.io/LocalChat/) · [下载发布版](https://github.com/liuyip222/LocalChat/releases) · [GitHub Pages 部署说明](docs/GITHUB_PAGES.md)
+
+展示页需按部署说明启用 GitHub Pages 后才能访问；它只介绍工具，聊天仍在 Windows 桌面程序中进行。
+
 ## 功能
 
 - **随手记录**：文字、多附件消息、文件拖放、截图和文件粘贴。

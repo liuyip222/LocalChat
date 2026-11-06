@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="LocalChat：Windows 本地聊天收件箱。给自己发送文字、截图和文件，无需账号，聊天记录保存在自己的电脑上。">
+  <meta name="theme-color" content="#39745c">
+  <title>LocalChat — 留给自己，留在本地</title>
+  <link rel="icon" href="assets/localchat.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳转到正文</a>
+  <header class="header wrap">
+    <a class="brand" href="./" aria-label="LocalChat 首页"><img src="assets/localchat.svg" width="34" height="34" alt=""><span>LocalChat</span></a>
+    <nav aria-label="主导航"><a href="#features">功能</a><a href="#guide">上手</a><a href="#faq">常见问题</a><a class="repo-link" href="https://github.com/liuyip222/LocalChat">GitHub ↗</a></nav>
+  </header>
+
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot"></span> WINDOWS · 本地收件箱</p>
+        <h1 id="hero-title">留给自己，<br>留在<span>本地。</span></h1>
+        <p class="lead">一闪而过的想法、刚截下的画面、下次要用的文件。<br class="desktop-break">像聊天一样收好，不必再发给另一个人。</p>
+        <div class="actions"><a class="button primary" href="https://github.com/liuyip222/LocalChat/releases">下载 Windows 版 <span aria-hidden="true">↓</span></a><a class="text-link" href="https://github.com/liuyip222/LocalChat">查看源码 ↗</a></div>
+        <p class="download-note">Windows x64 · 自包含发布包无需另装 .NET<br>下载页如有多个版本，请查看对应的 Release 说明。</p>
+        <div class="hero-tags"><span>无需账号</span><span>聊天数据不上传</span><span>MIT 开源</span></div>
+      </div>
+
+      <figure class="preview">
+        <div class="app-window" aria-label="聊天界面静态示意，非真实截图">
+          <div class="app-caption"><img src="assets/localchat.svg" width="19" height="19" alt="">LocalChat · 本地收件箱<span class="window-controls" aria-hidden="true">─ &nbsp; □ &nbsp; ×</span></div>
+          <div class="chat-area">
+            <p class="chat-date">今天 · 留一点空间给自己</p>
+            <div class="message"><div class="bubble">下周的灵感，先放在这里。<br>慢慢来，也会有答案。</div><span class="avatar">我</span></div>
+            <div class="message"><div class="bubble file-bubble"><span class="file-icon" aria-hidden="true">▤</span><div><strong>项目灵感.md</strong><small>文件 · 2.4 KB</small><span class="file-options">打开 &nbsp; 保存 &nbsp; 另存为</span></div></div><span class="avatar">我</span></div>
+            <div class="message"><div class="bubble">刚才那段文字，也可以只选中一部分复制。</div><span class="avatar">我</span></div>
+          </div>
+          <div class="composer"><span class="composer-placeholder">写点什么，留给以后的自己……</span><div class="composer-bottom"><span class="demo-tools" aria-hidden="true">⚙ &nbsp; ⌕ &nbsp; ▱ &nbsp; ✂</span><span class="demo-send">发送 ↵</span></div></div>
+        </div>
+        <figcaption>界面布局示意 · 示例内容，不含真实聊天记录</figcaption>
+      </figure>
+    </section>
+
+    <div class="principle"><div class="wrap principle-inner"><strong>不是另一个云端聊天工具。</strong><p>一个窗口，一份只在自己电脑上的收件箱。</p><span>LOCAL FIRST</span></div></div>
+
+    <section id="features" class="section wrap" aria-labelledby="features-title">
+      <div class="section-heading"><p class="eyebrow">一点轻巧，恰好够用</p><h2 id="features-title">从随手存下，到随时找回。</h2></div>
+      <div class="features">
+        <article><span class="feature-number">01 / 记录</span><h3>文字、图片、文件，一起发</h3><p>输入一段文字，拖入多个文件，或 Ctrl+V 粘贴剪贴板里的截图。不用在笔记和文件夹之间来回切换。</p></article>
+        <article><span class="feature-number">02 / 截图</span><h3>截下画面，顺手标注</h3><p>可选隐藏窗口截图，自由调整选区。方框、圆框、箭头、文字、马赛克，配合颜色、大小与撤销重做。</p></article>
+        <article><span class="feature-number">03 / 查找</span><h3>记得一点，就能开始找</h3><p>按文字、文件名、日期和内容类型组合搜索，点击结果回到历史消息。支持中文子串查找。</p></article>
+        <article><span class="feature-number">04 / 保存</span><h3>文件原件，留一份在本地</h3><p>发送附件时复制原件，不压缩、不转码。支持图片预览，以及保存、另存为、定位文件；视频使用系统播放器打开。</p></article>
+      </div>
+    </section>
+
+    <section id="guide" class="guide-section">
+      <div class="section wrap guide-grid">
+        <div><p class="eyebrow">不用注册，直接开始</p><h2>解压。打开。<br>给自己发条消息。</h2><a class="text-link" href="https://github.com/liuyip222/LocalChat#开始使用">阅读完整使用说明 ↗</a></div>
+        <ol class="steps">
+          <li><span>01</span><div><h3>下载发布包</h3><p>打开 Releases，选择 Windows x64 自包含 ZIP 附件，而不是 Source code 源码压缩包。</p></div></li>
+          <li><span>02</span><div><h3>完整解压后运行</h3><p>打开 <code>LocalChat.exe</code>。自包含版自带运行环境，无需另装 .NET；源码开发则需要 .NET 10 SDK。</p></div></li>
+          <li><span>03</span><div><h3>按自己的习惯使用</h3><p>默认 Enter 发送、Shift+Enter 换行。输入框左下角可打开设置、搜索、添加文件和截图。</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="faq" class="section wrap faq-grid" aria-labelledby="faq-title">
+      <div><p class="eyebrow">了解多一点</p><h2 id="faq-title">关于你的<br>本地收件箱。</h2></div>
+      <div class="questions">
+        <details open><summary>聊天记录在哪里？</summary><div class="answer"><p>默认在 <code>%LOCALAPPDATA%\LocalChat\Data</code>。其中 <code>localchat.db</code> 保存消息和附件索引，<code>attachments</code> 保存原文件，<code>cache</code> 保存缩略图。可在设置中更换数据目录。</p><p>备份时先关闭应用，再复制整个数据目录，不要只复制数据库。</p></div></details>
+        <details><summary>本地保存，是不是就等于加密？</summary><div class="answer"><p>不是。LocalChat 无需账号，不上传聊天数据，但目前没有数据库加密或应用锁。同一台电脑上的其他有权限的程序或用户仍可能访问这些文件。</p><p>本页是公开的工具介绍页，不会连接应用，也不会读取本地聊天记录。</p></div></details>
+        <details><summary>为什么安装包比想象中大？</summary><div class="answer"><p>自包含发布版将 .NET 与 WPF 运行环境一并打包，换来解压即用、无需另装运行时。体积主要来自运行环境，不是聊天记录；具体大小以发布附件为准。</p></div></details>
+        <details><summary>支持哪些系统和功能？</summary><div class="answer"><p>目前面向 Windows x64，使用 C#、WPF 和 SQLite 构建。不提供网页版聊天、云同步、OCR、翻译或自动更新。图片预览依赖系统解码器，其他格式可交给系统关联程序打开。</p></div></details>
+        <details><summary>如何反馈问题或参与开发？</summary><div class="answer"><p>在 <a href="https://github.com/liuyip222/LocalChat/issues">GitHub Issues</a> 描述复现步骤和系统版本；提交截图或日志前请移除私人信息。开发说明见 <a href="https://github.com/liuyip222/LocalChat/blob/main/CONTRIBUTING.md">贡献指南</a>。</p></div></details>
+      </div>
+    </section>
+
+    <section class="closing wrap"><img src="assets/localchat.svg" width="56" height="56" alt=""><h2>下一条消息，发给自己。</h2><p>让想法有个落脚的地方。</p><a class="button primary" href="https://github.com/liuyip222/LocalChat/releases">前往下载 <span aria-hidden="true">↗</span></a></section>
+  </main>
+
+  <footer class="footer wrap"><span class="brand"><img src="assets/localchat.svg" width="24" height="24" alt="">LocalChat</span><p>留给自己，留在本地。</p><div><a href="https://github.com/liuyip222/LocalChat">GitHub</a><a href="https://github.com/liuyip222/LocalChat/releases">Releases</a><a href="https://github.com/liuyip222/LocalChat/blob/main/LICENSE">MIT License</a></div></footer>
+</body>
+</html>
