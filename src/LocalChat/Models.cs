@@ -36,6 +36,7 @@ public sealed class Attachment
     public string FullPath { get; set; } = "";
     public BitmapSource? Thumbnail { get; set; }
     public Visibility ImageVisibility => Thumbnail == null ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility CopyImageVisibility => Kind == "image" ? Visibility.Visible : Visibility.Collapsed;
     public string Icon => Kind == "video" ? "▶" : Kind == "image" ? "▧" : "▤";
     public string Detail => $"{(Kind == "video" ? "视频" : Kind == "image" ? "图片" : "文件")} · {FormatSize(Size)}";
     public static string FormatSize(long value) => value >= 1073741824 ? $"{value / 1073741824d:0.##} GB" : value >= 1048576 ? $"{value / 1048576d:0.##} MB" : value >= 1024 ? $"{value / 1024d:0.#} KB" : $"{value} B";

@@ -36,6 +36,33 @@ internal static class ChatInteractionTests
         Directory.CreateDirectory(root);
         try
         {
+            var pixels = new byte[640 * 4];
+            pixels[2] = 255;
+            pixels[3] = 128;
+            var original = BitmapSource.Create(640, 1, 96, 96, PixelFormats.Bgra32, null, pixels, 640 * 4);
+            var originalEncoder = new PngBitmapEncoder();
+            originalEncoder.Frames.Add(BitmapFrame.Create(original));
+            var originalPath = Path.Combine(root, "original.png");
+            using (var file = File.Create(originalPath)) originalEncoder.Save(file);
+            var copyData = ClipboardImages.CreateData(originalPath);
+            File.Delete(originalPath);
+            var copied = ClipboardImages.Read(copyData)!;
+            check(copied.PixelWidth == 640 && copied.PixelHeight == 1 && copied.IsFrozen,
+                "image copy loads full-resolution original and releases the source file");
+            var copiedPixels = new byte[640 * 4];
+            copied.CopyPixels(copiedPixels, 640 * 4, 0);
+            check(copiedPixels.SequenceEqual(pixels), "PNG image copy preserves original pixels and transparency");
+            check(copyData.GetDataPresent("PNG", false) && copyData.GetDataPresent("image/png", false)
+                && copyData.GetData(DataFormats.Bitmap, false) is BitmapSource { PixelWidth: 640 },
+                "image copy publishes PNG formats and a full-resolution Windows bitmap fallback");
+            var mimeData = new DataObject();
+            mimeData.SetData("image/png", copyData.GetData("image/png", false), false);
+            check(ClipboardImages.Read(mimeData)?.PixelWidth == 640, "image/png copy format can be decoded independently");
+            var missingRejected = false;
+            try { ClipboardImages.CreateData(originalPath); }
+            catch (FileNotFoundException) { missingRejected = true; }
+            check(missingRejected, "missing image original is rejected before accessing the clipboard");
+
             var window = new MainWindow(new Settings(), new ChatStore(root));
             var list = (ListBox)window.FindName("MessagesList");
             var content = (FrameworkElement)list.ItemTemplate.LoadContent();
@@ -54,6 +81,29 @@ internal static class ChatInteractionTests
             check(bubble.ActualWidth < 180, "short message bubble sizes to its contents");
             check(((MenuItem)bubble.ContextMenu.Items[0]).Header.Equals("复制"), "message context menu uses the shorter Copy label");
             check(ReferenceEquals(messageText.ContextMenu, bubble.ContextMenu), "selectable message text retains the bubble Copy/Edit/Delete menu");
+            var attachments = ((StackPanel)bubble.Child).Children.OfType<ItemsControl>().Single();
+            var attachmentContent = (Border)attachments.ItemTemplate.LoadContent();
+            var attachmentPanel = (StackPanel)attachmentContent.Child;
+            var actions = attachmentPanel.Children.OfType<WrapPanel>().Single();
+            var copyButton = actions.Children.OfType<Button>().Single(b => Equals(b.Content, "复制图片"));
+            var attachment = new Attachment { Kind = "image", Thumbnail = image };
+            attachmentContent.DataContext = attachment;
+            attachmentContent.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
+            copyButton.GetBindingExpression(UIElement.VisibilityProperty)!.UpdateTarget();
+            check(copyButton.Visibility == Visibility.Visible && attachmentPanel.Children.IndexOf(actions)
+                > attachmentPanel.Children.IndexOf(attachmentPanel.Children.OfType<Image>().Single()),
+                "image attachment exposes Copy Image in the action row below its preview");
+            attachmentContent.DataContext = new Attachment { Kind = "image" };
+            attachmentContent.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
+            copyButton.GetBindingExpression(UIElement.VisibilityProperty)!.UpdateTarget();
+            check(copyButton.Visibility == Visibility.Visible, "image copy remains available without a cached thumbnail");
+            foreach (var kind in new[] { "file", "video" })
+            {
+                attachmentContent.DataContext = new Attachment { Kind = kind };
+                attachmentContent.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
+                copyButton.GetBindingExpression(UIElement.VisibilityProperty)!.UpdateTarget();
+                check(copyButton.Visibility == Visibility.Collapsed, $"{kind} attachment does not expose Copy Image");
+            }
             var composer = (TextBox)window.FindName("Composer");
             check(composer.CommandBindings.Cast<CommandBinding>().Any(b => b.Command == ApplicationCommands.Paste), "composer overrides text-only Paste command so image-only clipboard can execute");
             window.Close();

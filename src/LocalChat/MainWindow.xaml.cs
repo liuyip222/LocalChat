@@ -289,6 +289,13 @@ public partial class MainWindow : Window
     private void ShellOpen(string path) => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
     private async void OnOpenAttachment(object sender, RoutedEventArgs e) => await OpenAttachmentAsync(GetAttachment(sender));
     private async void OnPreview(object sender, MouseButtonEventArgs e) => await OpenAttachmentAsync(GetAttachment(sender));
+    private async void OnCopyImage(object sender, RoutedEventArgs e) => await RunAsync(async () =>
+    {
+        if (GetAttachment(sender) is not { Kind: "image" } a) return;
+        Status.Text = "正在复制图片…";
+        await ClipboardImages.CopyAsync(a.FullPath);
+        Status.Text = "图片已复制到剪贴板，可在其他程序中粘贴。";
+    });
     private Task OpenAttachmentAsync(Attachment? a) => RunAsync(() =>
     {
         if (a == null) return Task.CompletedTask;
