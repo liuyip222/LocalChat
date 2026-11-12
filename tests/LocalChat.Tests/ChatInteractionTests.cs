@@ -64,13 +64,35 @@ internal static class ChatInteractionTests
             check(missingRejected, "missing image original is rejected before accessing the clipboard");
 
             var window = new MainWindow(new Settings(), new ChatStore(root));
+            var composerBorder = (Border)window.FindName("ComposerBorder");
+            var splitter = (GridSplitter)window.FindName("ComposerSplitter");
+            check(composerBorder.Margin == new Thickness(6, 0, 6, 6)
+                && composerBorder.Padding == new Thickness(12),
+                "composer has compact outer margins while retaining comfortable internal padding");
+            check(splitter.Margin == new Thickness(6, 0, 6, 0) && splitter.Height == 8,
+                "composer splitter aligns with the compact border without shrinking its drag target");
+            var composerRow = (RowDefinition)window.FindName("ComposerRow");
+            check(composerRow.Height.IsAbsolute && composerRow.Height.Value == composerRow.MinHeight
+                && composerRow.MinHeight == 160,
+                "composer starts at its minimum height of 160 DIPs");
+            composerRow.Height = new GridLength(240);
+            var restartedWindow = new MainWindow(new Settings(), new ChatStore(root));
+            var restartedRow = (RowDefinition)restartedWindow.FindName("ComposerRow");
+            check(restartedRow.Height.Value == restartedRow.MinHeight,
+                "new window resets composer to minimum height after the previous window was resized");
+            restartedWindow.Close();
             var list = (ListBox)window.FindName("MessagesList");
+            check(list.Padding.Bottom == 3 && list.Padding.Top == 4,
+                "chat uses compact top and bottom spacing");
             var content = (FrameworkElement)list.ItemTemplate.LoadContent();
             content.DataContext = new Message { Text = "可选中文字" };
             content.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ContextIdle);
             content.Measure(new Size(700, 400));
             content.Arrange(new Rect(content.DesiredSize));
             var bubble = (Border)content.FindName("MessageBubble");
+            var dateLabel = ((StackPanel)content).Children.OfType<TextBlock>().Single();
+            check(dateLabel.Margin == new Thickness(0, 4, 0, 12),
+                "date label leaves less whitespace above the first chat bubble");
             var messageText = ((StackPanel)bubble.Child).Children.OfType<TextBox>().Single();
             messageText.GetBindingExpression(TextBox.TextProperty)!.UpdateTarget();
             content.Measure(new Size(700, 400));
@@ -106,6 +128,7 @@ internal static class ChatInteractionTests
             }
             var composer = (TextBox)window.FindName("Composer");
             check(composer.CommandBindings.Cast<CommandBinding>().Any(b => b.Command == ApplicationCommands.Paste), "composer overrides text-only Paste command so image-only clipboard can execute");
+            SmoothScrollingTests.Run(check, list);
             window.Close();
         }
         finally

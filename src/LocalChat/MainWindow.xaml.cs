@@ -110,6 +110,7 @@ public partial class MainWindow : Window
     private async Task LoadLatestAsync()
     {
         var list = await LoadAsync(new());
+        SmoothScrolling.Cancel(MessagesList);
         messages.Clear();
         foreach (var m in list) messages.Add(m);
         hasOlder = list.Count == ChatStore.PageSize;
@@ -136,6 +137,7 @@ public partial class MainWindow : Window
         if (messages.Count == 0) return;
         var anchor = messages[0];
         var older = await LoadAsync(new(), anchor.Id);
+        SmoothScrolling.Cancel(MessagesList);
         for (var i = older.Count - 1; i >= 0; i--) messages.Insert(0, older[i]);
         hasOlder = older.Count == ChatStore.PageSize;
         RefreshDates();
@@ -416,6 +418,7 @@ public partial class MainWindow : Window
         await RunAsync(async () =>
         {
             var list = await LoadAsync(new(), target.Id + 1);
+            SmoothScrolling.Cancel(MessagesList);
             messages.Clear(); foreach (var m in list) messages.Add(m);
             hasOlder = list.Count == ChatStore.PageSize; RefreshDates();
             var match = messages.FirstOrDefault(m => m.Id == target.Id);
