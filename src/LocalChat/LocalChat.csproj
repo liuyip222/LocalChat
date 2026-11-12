@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>LocalChat</AssemblyName>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <ApplicationIcon>Assets\localchat.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
